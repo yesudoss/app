@@ -1,0 +1,93 @@
+version: '3.9'
+
+services:
+
+  kaptrack-database:
+    container_name: kaptrack-database
+    image: postgres:14.1
+    environment:
+      - POSTGRES_NAME=kaptrack
+      - POSTGRES_USER=kaptrack
+      - POSTGRES_PASSWORD=WfLrjmT12FiamUTiAy6qjA
+      - POSTGRES_HOST=kaptrack-database
+      - POSTGRES_PORT=5432
+    ports:
+      - "5432:5432"
+
+  kaptrack-backend:
+    container_name: kaptrack-backend
+    build: ./backend
+    image: kaptrack-backend
+    command: sh -c "python manage.py migrate && python manage.py runserver 0.0.0.0:8000"
+    volumes:
+      - ./backend:/code
+    ports:
+      - 8000:8000
+    environment:
+      - POSTGRES_NAME=kaptrack
+      - POSTGRES_USER=kaptrack
+      - POSTGRES_PASSWORD=WfLrjmT12FiamUTiAy6qjA
+      - POSTGRES_HOST=kaptrack-database
+      - POSTGRES_PORT=5432
+      - CELERY_BROKER=redis://redis:6379/0
+      - CELERY_BACKEND=redis://redis:6379/0
+    depends_on:
+      - kaptrack-database
+      - redis
+
+  celery:
+    container_name: kaptrack-celery
+    build: ./backend
+    command: celery -A app worker -l info
+    volumes:
+      - ./backend:/code
+    environment:
+      DJANGO_ALLOWED_HOSTS: localhost 127.0.0.1 [::1]
+      CELERY_BROKER: redis://redis:6379/0
+      CELERY_BACKEND: redis://redis:6379/0
+      POSTGRES_NAME: kaptrack
+      POSTGRES_USER: kaptrack
+      POSTGRES_PASSWORD: WfLrjmT12FiamUTiAy6qjA
+      POSTGRES_HOST: kaptrack-database
+      POSTGRES_PORT: 5432
+    depends_on:
+      - kaptrack-backend
+      - redis
+
+  celery-beat:
+    container_name: kaptrack-celery-beat
+    build: ./backend
+    command: celery -A app beat -l info
+    volumes:
+      - ./backend:/code
+    environment:
+      - DEBUG=1
+      - DJANGO_ALLOWED_HOSTS=localhost 127.0.0.1 [::1]
+    depends_on:
+      - kaptrack-backend
+      - redis
+
+
+  redis:
+    container_name: kaptrack-redis
+    image: "redis:alpine"
+
+  pgadmin:
+    container_name: pgadmin4_container
+    image: dpage/pgadmin4
+    restart: always
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com
+      PGADMIN_DEFAULT_PASSWORD: postgres
+    ports:
+      - "5050:80"
+
+#  kaptrack-frontend:
+#    container_name: kaptrack-frontend
+#    build: ./frontend
+#    image: kaptrack-frontend
+#    command: npm start
+#    volumes:
+#      - ./frontend:/app
+#    ports:
+#      - 3000:3000
