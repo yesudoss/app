@@ -1,0 +1,2 @@
+# app
+Django application
