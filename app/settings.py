@@ -37,7 +37,9 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+'user',
     'student', # Registering the application
+
 ]
 
 MIDDLEWARE = [
@@ -51,6 +53,7 @@ MIDDLEWARE = [
 ]
 
 ROOT_URLCONF = 'app.urls'
+AUTH_USER_MODEL = 'user.CustomUser'
 
 TEMPLATES = [
     {
